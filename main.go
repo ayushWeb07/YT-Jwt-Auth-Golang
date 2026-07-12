@@ -1,17 +1,32 @@
 package main
 
 import (
-	"net/http"
+	"log"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/cmd/app"
+	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/internal/config"
 )
 
 func main() {
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("welcome"))
-	})
-	http.ListenAndServe(":3000", r)
+	// create the server config instance
+	serverConfig, err := config.LoadServerConfig()
+
+	if err != nil {
+		log.Fatal("Something went wrong while creating server config: " + err.Error())
+	}
+
+	// create the db config instance
+	dbConfig, err := config.LoadDbConfig()
+
+	if err != nil {
+		log.Fatal("Something went wrong while creating database config: " + err.Error())
+	}
+
+	// create the app instance
+	serverApp := &app.App{
+		ServerConfig: serverConfig,
+		DbConfig:     dbConfig,
+	}
+
+	serverApp.Run()
 }
