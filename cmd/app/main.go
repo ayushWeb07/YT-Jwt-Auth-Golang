@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/internal/config"
+	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/internal/routers"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
@@ -46,7 +47,7 @@ func (app *App) Run() {
 	// create a server instance
 	server := &http.Server{
 		Addr:         app.ServerConfig.Port,
-		Handler:      nil,
+		Handler:      routers.RegisterRouters(db, logger, app.ServerConfig),
 		ReadTimeout:  app.ServerConfig.ReadTimeout,
 		WriteTimeout: app.ServerConfig.WriteTimeout,
 		IdleTimeout:  app.ServerConfig.IdleTimeout,
