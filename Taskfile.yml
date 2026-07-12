@@ -1,0 +1,65 @@
+version: '3'
+
+vars:
+  GREETING: Hello, world!
+
+tasks:
+  default:
+    desc: Print a greeting message
+    cmds:
+      - echo "{{.GREETING}}"
+    silent: true
+
+  goose:status:
+    desc: Print the status of all db migrations
+    cmds:
+      - goose status
+
+  goose:create:
+    desc: Create a new DB migration
+    requires:
+      vars:
+        - MIGRATION_NAME
+    cmds:
+      - goose create {{.MIGRATION_NAME}} sql
+
+  goose:up-all:
+    desc: Apply all db migrations
+    cmds:
+      - goose up
+
+  goose:up-to:
+    desc: Migrate database to a specific version
+    requires:
+      vars:
+        - VERSION
+    cmds:
+      - goose up-to {{.VERSION}}
+
+  goose:up-by-one:
+    desc: Apply all the changes made in the next migration
+    cmds:
+      - goose up-by-one
+
+  goose:down-to:
+    desc: Rollback migrations to a specific version
+    requires:
+      vars:
+        - VERSION
+    cmds:
+      - goose down-to {{.VERSION}}
+
+  goose:down-by-one:
+    desc: Rollback a single migration from the current version
+    cmds:
+      - goose down
+
+  goose:down-all:
+    desc: Rollback all the migrations
+    cmds:
+      - goose down-to 0
+
+  dev:
+    desc: Start the server using air for hot reload
+    cmds:
+      - air
