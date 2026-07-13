@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/internal/config"
+	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/internal/dtos"
 	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/internal/services"
 	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/internal/utils"
 	"go.uber.org/zap"
@@ -36,20 +37,42 @@ func (userController *UserController) CreateUser(resWriter http.ResponseWriter, 
 }
 
 func (userController *UserController) GetAllUsers(resWriter http.ResponseWriter, req *http.Request) {
-	userController.UserService.GetAllUsers()
+	userModels, err := userController.UserService.GetAllUsers()
+
+	if err != nil {
+		utils.WriteJsonResponse(err.StatusCode, resWriter, map[string]any{
+			"success": err.Success,
+			"message": err.Error(),
+		})
+
+		return
+	}
 
 	utils.WriteJsonResponse(http.StatusOK, resWriter, map[string]any{
 		"success": true,
-		"message": "All users were fetched successfully",
+		"message": "Successfully fetched all the users",
+		"data":    userModels,
 	})
 }
 
 func (userController *UserController) GetUserById(resWriter http.ResponseWriter, req *http.Request) {
-	userController.UserService.GetUserById()
+	userParams := req.Context().Value("params").(*dtos.GetUserByIdParams)
+
+	userModel, err := userController.UserService.GetUserById(userParams)
+
+	if err != nil {
+		utils.WriteJsonResponse(err.StatusCode, resWriter, map[string]any{
+			"success": err.Success,
+			"message": err.Error(),
+		})
+
+		return
+	}
 
 	utils.WriteJsonResponse(http.StatusOK, resWriter, map[string]any{
 		"success": true,
-		"message": "A user was fetched successfully",
+		"message": "Successfully fetched the user",
+		"data":    userModel,
 	})
 }
 
