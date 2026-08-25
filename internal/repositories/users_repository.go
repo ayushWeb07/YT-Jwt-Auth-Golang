@@ -12,14 +12,14 @@ import (
 )
 
 type UserRepositoryInterface interface {
-	CreateUser()
+	CreateUser(userPayload *dtos.CreateUserPayload) *utils.AppError
 	GetAllUsers() ([]*models.UserModel, *utils.AppError)
 	GetUserById(userParams *dtos.GetUserByIdParams) (*models.UserModel, *utils.AppError)
 	UpdateUserById()
 	DeleteUserById()
 
-	GetUserByEmail()
-	GetUserByUsernameAndEmail()
+	GetUserByEmail(userPayload *dtos.GetUserByEmailPayload) (*models.UserModel, *utils.AppError)
+	GetUserByUsernameAndEmail(userPayload *dtos.GetUserByUsernameAndEmailPayload) (*models.UserModel, *utils.AppError)
 }
 
 type UserRepository struct {
@@ -28,8 +28,30 @@ type UserRepository struct {
 	serverConfig *config.ServerConfig
 }
 
-func (userRepository *UserRepository) CreateUser() {
-	userRepository.logger.Info("userRepository -> CreateUser")
+func (userRepository *UserRepository) CreateUser(userPayload *dtos.CreateUserPayload) *utils.AppError {
+	query := "INSERT INTO users (username, email, password) VALUES (?, ?, ?)"
+	result, queryExecErr := userRepository.db.Exec(query, userPayload.Username, userPayload.Email, userPayload.Password)
+
+	if queryExecErr != nil {
+		userRepository.logger.Error("Failed to insert user into the database",
+			zap.String("error", queryExecErr.Error()))
+
+		return utils.InternalServerError("Failed to insert user into the database: " + queryExecErr.Error())
+	}
+
+	lastInsertedId, insertErr := result.LastInsertId()
+
+	if insertErr != nil {
+		userRepository.logger.Error("Failed to insert user into the database",
+			zap.String("error", insertErr.Error()))
+
+		return utils.InternalServerError("Failed to insert user into the database: " + insertErr.Error())
+	}
+
+	userRepository.logger.Info("Successfully inserted user into the database",
+		zap.Int64("user_id", lastInsertedId))
+
+	return nil
 }
 
 func (userRepository *UserRepository) GetAllUsers() ([]*models.UserModel, *utils.AppError) {
@@ -109,12 +131,56 @@ func (userRepository *UserRepository) DeleteUserById() {
 	userRepository.logger.Info("userRepository -> DeleteUserById")
 }
 
-func (userRepository *UserRepository) GetUserByEmail() {
-	userRepository.logger.Info("userRepository -> GetUserByEmail")
+func (userRepository *UserRepository) GetUserByEmail(userPayload *dtos.GetUserByEmailPayload) (*models.UserModel, *utils.AppError) {
+	userModel := &models.UserModel{}
+
+	query := "SELECT id, username, email, is_verified, created_at, updated_at FROM users WHERE email = ?"
+
+	row := userRepository.db.QueryRow(query, userPayload.Email)
+
+	queryErr := row.Scan(&userModel.ID, &userModel.Username, &userModel.Email, &userModel.IsVerified, &userModel.CreatedAt, &userModel.UpdatedAt)
+
+	if queryErr != nil {
+		if queryErr == sql.ErrNoRows {
+			userRepository.logger.Error("Such user does not exist",
+				zap.String("error", queryErr.Error()))
+
+			return nil, utils.NotFoundError("Such user does not exist")
+		}
+
+		userRepository.logger.Error("Failed to fetch the user",
+			zap.String("error", queryErr.Error()))
+
+		return nil, utils.InternalServerError(fmt.Sprintf("Failed to fetch the user: %s", queryErr.Error()))
+	}
+
+	return userModel, nil
 }
 
-func (userRepository *UserRepository) GetUserByUsernameAndEmail() {
-	userRepository.logger.Info("userRepository -> GetUserByUsernameAndEmail")
+func (userRepository *UserRepository) GetUserByUsernameAndEmail(userPayload *dtos.GetUserByUsernameAndEmailPayload) (*models.UserModel, *utils.AppError) {
+	userModel := &models.UserModel{}
+
+	query := "SELECT id, username, email, is_verified, created_at, updated_at FROM users WHERE username = ? AND email = ?"
+
+	row := userRepository.db.QueryRow(query, userPayload.Username, userPayload.Email)
+
+	queryErr := row.Scan(&userModel.ID, &userModel.Username, &userModel.Email, &userModel.IsVerified, &userModel.CreatedAt, &userModel.UpdatedAt)
+
+	if queryErr != nil {
+		if queryErr == sql.ErrNoRows {
+			userRepository.logger.Error("Such user does not exist",
+				zap.String("error", queryErr.Error()))
+
+			return nil, utils.NotFoundError("Such user does not exist")
+		}
+
+		userRepository.logger.Error("Failed to fetch the user",
+			zap.String("error", queryErr.Error()))
+
+		return nil, utils.InternalServerError(fmt.Sprintf("Failed to fetch the user: %s", queryErr.Error()))
+	}
+
+	return userModel, nil
 }
 
 func NewUserRepository(db *sql.DB, logger *zap.Logger, serverConfig *config.ServerConfig) UserRepositoryInterface {
