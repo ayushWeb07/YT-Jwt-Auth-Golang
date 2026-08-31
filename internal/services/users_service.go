@@ -7,7 +7,6 @@ import (
 	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/internal/repositories"
 	"github.com/ayushWeb07/YT-Jwt-Auth-Golang/internal/utils"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserServiceInterface interface {
@@ -16,6 +15,7 @@ type UserServiceInterface interface {
 	GetUserById(userParams *dtos.GetUserByIdParams) (*models.UserModel, *utils.AppError)
 	UpdateUserById()
 	DeleteUserById()
+	GetUserByUsernameAndEmail(userPayload *dtos.GetUserByUsernameAndEmailPayload) (*models.UserModel, *utils.AppError)
 }
 
 type UserService struct {
@@ -27,37 +27,8 @@ type UserService struct {
 func (userService *UserService) CreateUser(userPayload *dtos.CreateUserPayload) *utils.AppError {
 	userService.logger.Info("userService -> CreateUser")
 
-	// check if the user already exists
-	_, getUserRepositoryErr := userService.UserRepository.GetUserByUsernameAndEmail(&dtos.GetUserByUsernameAndEmailPayload{
-		Username: userPayload.Username,
-		Email:    userPayload.Email,
-	})
-
-	if getUserRepositoryErr == nil {
-		return utils.BadRequestError("User with such username and email already exists")
-	}
-
-	// hash the password
-	hashBytes, hashErr := bcrypt.GenerateFromPassword([]byte(userPayload.Password), bcrypt.DefaultCost)
-
-	if hashErr != nil {
-		userService.logger.Fatal("Something went wrong while hashing the password",
-			zap.String("error", hashErr.Error()))
-
-		return utils.InternalServerError("Something went wrong while hashing the password: " + hashErr.Error())
-	}
-
-	userPayload.Password = string(hashBytes)
-
-	// call create user repository
 	createUserRepositoryErr := userService.UserRepository.CreateUser(userPayload)
-
-	if createUserRepositoryErr != nil {
-		return createUserRepositoryErr
-	}
-
-	userService.logger.Info("User creation was successful")
-	return nil
+	return createUserRepositoryErr
 }
 
 func (userService *UserService) GetAllUsers() ([]*models.UserModel, *utils.AppError) {
@@ -84,6 +55,13 @@ func (userService *UserService) DeleteUserById() {
 	userService.logger.Info("userService -> DeleteUserById")
 
 	userService.UserRepository.DeleteUserById()
+}
+
+func (userService *UserService) GetUserByUsernameAndEmail(userPayload *dtos.GetUserByUsernameAndEmailPayload) (*models.UserModel, *utils.AppError) {
+	userService.logger.Info("userService -> GetUserByUsernameAndEmail")
+
+	userModel, err := userService.UserRepository.GetUserByUsernameAndEmail(userPayload)
+	return userModel, err
 }
 
 func NewUserService(UserRepository repositories.UserRepositoryInterface, logger *zap.Logger, serverConfig *config.ServerConfig) UserServiceInterface {

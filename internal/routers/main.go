@@ -29,20 +29,24 @@ func RegisterRouters(db *sql.DB, logger *zap.Logger, serverConfig *config.Server
 	// create all services
 	userService := services.NewUserService(userRepository, logger, serverConfig)
 	roleService := services.NewRoleService(roleRepository, logger, serverConfig)
+	authService := services.NewAuthService(userService, logger, serverConfig)
 	userRoleService := services.NewUserRoleService(userRoleRepository, logger, serverConfig)
 
 	// create all controllers
 	userController := controllers.NewUserController(userService, logger, serverConfig)
+	authController := controllers.NewAuthController(authService, logger, serverConfig)
 	roleController := controllers.NewRoleController(roleService, logger, serverConfig)
 	userRoleController := controllers.NewUserRoleController(userRoleService, logger, serverConfig)
 
 	// create all routers
 	userRouter := NewUserRouter(userController, logger, serverConfig)
+	authRouter := NewAuthRouter(authController, logger, serverConfig)
 	roleRouter := NewRoleRouter(roleController, logger, serverConfig)
 	userRoleRouter := NewUserRoleRouter(userRoleController, logger, serverConfig)
 
 	// register all routers
 	userRouter.Register(router)
+	authRouter.Register(router)
 	roleRouter.Register(router)
 	userRoleRouter.Register(router)
 

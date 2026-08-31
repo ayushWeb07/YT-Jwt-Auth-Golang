@@ -39,7 +39,6 @@ func (userRouter *UserRouter) Register(router *chi.Mux) {
 			},
 		)).Get("/{id}", userRouter.UserController.GetUserById)
 
-		r.Post("/", userRouter.UserController.CreateUser)
 		r.Put("/{id}", userRouter.UserController.UpdateUserById)
 		r.Delete("/{id}", userRouter.UserController.DeleteUserById)
 	})

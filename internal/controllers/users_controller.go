@@ -11,14 +11,10 @@ import (
 )
 
 type UserControllerInterface interface {
-	CreateUser(resWriter http.ResponseWriter, req *http.Request)
 	GetAllUsers(resWriter http.ResponseWriter, req *http.Request)
 	GetUserById(resWriter http.ResponseWriter, req *http.Request)
 	UpdateUserById(resWriter http.ResponseWriter, req *http.Request)
 	DeleteUserById(resWriter http.ResponseWriter, req *http.Request)
-
-	GetUserByEmail(resWriter http.ResponseWriter, req *http.Request)
-	GetUserByUsernameAndEmail(resWriter http.ResponseWriter, req *http.Request)
 }
 
 type UserController struct {
@@ -27,22 +23,14 @@ type UserController struct {
 	serverConfig *config.ServerConfig
 }
 
-func (userController *UserController) CreateUser(resWriter http.ResponseWriter, req *http.Request) {
-	userController.UserService.CreateUser()
-
-	utils.WriteJsonResponse(http.StatusCreated, resWriter, map[string]any{
-		"success": true,
-		"message": "A user was created successfully",
-	})
-}
-
 func (userController *UserController) GetAllUsers(resWriter http.ResponseWriter, req *http.Request) {
 	userModels, err := userController.UserService.GetAllUsers()
 
 	if err != nil {
 		utils.WriteJsonResponse(err.StatusCode, resWriter, map[string]any{
 			"success": err.Success,
-			"message": err.Error(),
+			"message": "Something went wrong while fetching all the users",
+			"error":   err.Error(),
 		})
 
 		return
@@ -63,7 +51,8 @@ func (userController *UserController) GetUserById(resWriter http.ResponseWriter,
 	if err != nil {
 		utils.WriteJsonResponse(err.StatusCode, resWriter, map[string]any{
 			"success": err.Success,
-			"message": err.Error(),
+			"message": "Something went wrong while fetching the user by id",
+			"error":   err.Error(),
 		})
 
 		return
@@ -91,24 +80,6 @@ func (userController *UserController) DeleteUserById(resWriter http.ResponseWrit
 	utils.WriteJsonResponse(http.StatusOK, resWriter, map[string]any{
 		"success": true,
 		"message": "A user was deleted successfully",
-	})
-}
-
-func (userController *UserController) GetUserByEmail(resWriter http.ResponseWriter, req *http.Request) {
-	userController.UserService.GetUserByEmail()
-
-	utils.WriteJsonResponse(http.StatusOK, resWriter, map[string]any{
-		"success": true,
-		"message": "Fetched user successfully by email",
-	})
-}
-
-func (userController *UserController) GetUserByUsernameAndEmail(resWriter http.ResponseWriter, req *http.Request) {
-	userController.UserService.GetUserByUsernameAndEmail()
-
-	utils.WriteJsonResponse(http.StatusOK, resWriter, map[string]any{
-		"success": true,
-		"message": "Fetched user successfully by username and email",
 	})
 }
 
